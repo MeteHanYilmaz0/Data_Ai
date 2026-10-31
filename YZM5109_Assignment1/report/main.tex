@@ -1,0 +1,138 @@
+% YZM5109 Assignment I -- IEEE conference format. Compile on Overleaf (IEEEtran is built in).
+% After the Colab run, copy results_table.tex and fig_*.pdf from the results zip into this folder.
+\documentclass[conference]{IEEEtran}
+\usepackage{booktabs,graphicx,amsmath,url}
+\usepackage[hidelinks]{hyperref}
+\newcommand{\todo}[1]{\textcolor{red}{[TODO: #1]}}
+\usepackage{xcolor}
+
+\begin{document}
+\title{Does One LoRA Run Beat Prompt Engineering?\\A Controlled Study on GSM8K with Qwen2.5-1.5B-Instruct}
+\author{\IEEEauthorblockN{\todo{Name Surname}}
+\IEEEauthorblockA{YZM5109 Large Language Models, Y\i ld\i z Technical University\\\todo{student number, e-mail}}}
+\maketitle
+
+\begin{abstract}
+We compare parameter-efficient fine-tuning with prompt engineering on grade-school math word problems
+(GSM8K). Using a single decoder-only model, Qwen2.5-1.5B-Instruct, we evaluate four conditions on the
+same test set with identical greedy decoding: zero-shot direct prompting (C1), zero-shot chain-of-thought
+(C2), Program-Aided Language modelling (PAL, C3), and one LoRA fine-tuning run evaluated with the exact
+C1 prompt (C4). Besides exact-match accuracy with bootstrap confidence intervals and paired McNemar
+tests, we report the cost side of each approach: generated tokens per answer, latency, trainable
+parameters and training time. \todo{one sentence with the headline result, e.g. ``C? achieves X\%,
+significantly above/below ...''}
+\end{abstract}
+
+\section{Introduction}
+Adapting a pretrained LLM to a task can be done by changing its inputs (prompting) or its weights
+(fine-tuning). Prompting is free at training time but can increase inference cost; low-rank adaptation
+(LoRA)~\cite{hu2022lora} trains a small fraction of the parameters but requires labelled data and GPU time.
+For small instruction-tuned models it is not obvious which is better: these models have already been
+heavily tuned on reasoning data, so a short task-specific fine-tune may help, do nothing, or even hurt.
+We answer the assignment's research question --- \emph{does one LoRA fine-tuning run outperform prompting
+on the original model?} --- under controlled conditions, where only the technique varies.
+
+\section{Experimental Setup}
+\subsection{Model and data}
+\textbf{Model.} Qwen2.5-1.5B-Instruct~\cite{qwen25}, a 1.54B-parameter decoder-only transformer with
+grouped-query attention, chosen as the largest recommended size that trains comfortably on a single
+16\,GB GPU. \textbf{Dataset.} GSM8K~\cite{cobbe2021gsm8k}: 7{,}473 training and 1{,}319 test problems,
+each with a natural-language reference solution and a single numeric answer. The numeric answer allows
+an unambiguous exact-match metric, which removes the judge noise of free-text tasks.
+\todo{N test items used: all 1319 or a seeded random subset.}
+
+\subsection{Conditions}
+All conditions share the same system prompt (``You are a helpful assistant.'') and the same answer-format
+instruction (\emph{End your response with ``The answer is: $<$number$>$''}), so the format is held constant.
+\begin{itemize}
+\item \textbf{C1 Zero-shot direct:} ``Solve the following math problem. Question: \ldots'' plus the format line.
+\item \textbf{C2 Zero-shot CoT}~\cite{kojima2022large,wei2022chain}: C1 plus an explicit instruction to
+reason step by step, write out intermediate calculations and verify the result.
+\item \textbf{C3 PAL}~\cite{gao2023pal}: the model writes a Python function \texttt{solution()}; we
+execute it in an isolated subprocess (5\,s timeout) and score its return value. Arithmetic is thus
+delegated to the interpreter.
+\item \textbf{C4 LoRA fine-tuning:} the original model fine-tuned once with LoRA and evaluated with the
+\emph{identical} C1 prompt. Prompting techniques are not re-applied to C4.
+\end{itemize}
+\todo{if RUN\_FEWSHOT was enabled: C5, 4-shot with worked training-set solutions as prior chat turns.}
+
+\subsection{Fine-tuning (C4)}
+Training pairs are (C1 prompt, reference solution): the GSM8K rationale with calculator annotations
+\texttt{<<\ldots>>} removed, followed by ``The answer is: $N$''. The loss is computed only on the response
+tokens. LoRA adapters ($r{=}16$, $\alpha{=}32$, dropout 0.05) are attached to all attention and MLP
+projections (\texttt{q,k,v,o,gate,up,down}). We use AdamW, learning rate $2{\times}10^{-4}$ with 5\%
+warm-up and cosine decay, effective batch 16 (4$\times$4 gradient accumulation), 300 optimiser steps
+($\approx$0.64 epochs, 4{,}800 examples), max length 512, gradient checkpointing, and fp16 mixed precision
+on \todo{GPU}. Training-set exemplars never overlap the test set.
+
+\subsection{Decoding and evaluation}
+Decoding is identical for every condition: greedy (\texttt{do\_sample=False}), \texttt{max\_new\_tokens}=512,
+no repetition penalty. The predicted answer is the number after ``The answer is'', falling back to
+\texttt{\textbackslash boxed\{\}} and then to the last number in the output; for PAL it is the executed
+return value. A prediction is correct if it equals the reference within $10^{-4}$. We report accuracy with
+95\% bootstrap CIs (10{,}000 resamples), and test every pair of conditions with an exact two-sided
+McNemar test~\cite{mcnemar1947}, which is the appropriate test for paired binary outcomes on the same items.
+
+\section{Results}
+\IfFileExists{results_table.tex}{\input{results_table.tex}}{\todo{copy results\_table.tex here}}
+
+\begin{table}[t]\centering
+\caption{Cost of each approach.}\label{tab:cost}
+\begin{tabular}{lcc}\toprule
+ & Prompting (C1--C3) & LoRA (C4) \\\midrule
+Trainable parameters & 0 & \todo{} (\todo{}\%) \\
+Training time & 0 & \todo{} min \\
+Peak GPU memory (train) & -- & \todo{} GB \\
+Mean generated tokens & \todo{C1/C2/C3} & \todo{} \\\bottomrule
+\end{tabular}\end{table}
+
+\begin{figure}[t]\centering
+\IfFileExists{fig_accuracy.pdf}{\includegraphics[width=\linewidth]{fig_accuracy.pdf}}{\todo{fig\_accuracy.pdf}}
+\caption{Accuracy per condition with 95\% bootstrap CIs.}\label{fig:acc}
+\end{figure}
+\begin{figure}[t]\centering
+\IfFileExists{fig_cost.pdf}{\includegraphics[width=\linewidth]{fig_cost.pdf}}{\todo{fig\_cost.pdf}}
+\caption{Accuracy against inference cost (mean generated tokens).}\label{fig:cost}
+\end{figure}
+
+\todo{Describe Table~\ref{tab:main}: ranking, which differences are significant (McNemar $p<0.05$),
+PAL execution failures (timeouts/errors), truncation rate.}
+
+\section{Discussion}
+\todo{Write after results. Points to address:}
+\begin{itemize}
+\item \textbf{Direct vs.\ CoT.} Instruction-tuned models often reason step by step even when not asked;
+compare mean tokens of C1 and C2 to check whether the ``direct'' baseline is implicitly CoT.
+\item \textbf{PAL.} Does offloading arithmetic help a 1.5B model, or do code errors outweigh the gain?
+\item \textbf{Fine-tuning.} GSM8K reference solutions are terser than the model's native style. If C4
+falls below C1, a plausible cause is that the fine-tune shifts the model to shorter rationales; check
+the token counts and the qualitative examples.
+\item \textbf{Cost trade-off.} Prompting costs nothing to train but CoT/PAL lengthen every answer;
+LoRA costs a one-time training run.
+\end{itemize}
+
+\section{Limitations}
+Single model, single seed and a single LoRA configuration, so variance across seeds and the effect of
+rank, steps and learning rate are not measured. GSM8K may partly overlap the model's pre-training or
+instruction-tuning data, which inflates absolute accuracy for all conditions equally but could reduce the
+headroom for fine-tuning. Greedy decoding excludes self-consistency, which typically improves CoT.
+
+\section{Conclusion}
+\todo{Answer the research question in 2--3 sentences.}
+
+\section*{Reproducibility}
+Code, notebook and raw per-item predictions: \todo{GitHub link}. The notebook runs end to end on a free
+Colab T4.
+
+\bibliographystyle{IEEEtran}
+\begin{thebibliography}{9}
+\bibitem{hu2022lora} E.~J. Hu \emph{et al.}, ``LoRA: Low-rank adaptation of large language models,'' in \emph{Proc. ICLR}, 2022.
+\bibitem{qwen25} Qwen Team, ``Qwen2.5 technical report,'' \emph{arXiv:2412.15115}, 2024.
+\bibitem{cobbe2021gsm8k} K.~Cobbe \emph{et al.}, ``Training verifiers to solve math word problems,'' \emph{arXiv:2110.14168}, 2021.
+\bibitem{wei2022chain} J.~Wei \emph{et al.}, ``Chain-of-thought prompting elicits reasoning in large language models,'' in \emph{Proc. NeurIPS}, 2022.
+\bibitem{kojima2022large} T.~Kojima \emph{et al.}, ``Large language models are zero-shot reasoners,'' in \emph{Proc. NeurIPS}, 2022.
+\bibitem{gao2023pal} L.~Gao \emph{et al.}, ``PAL: Program-aided language models,'' in \emph{Proc. ICML}, 2023.
+\bibitem{dettmers2023qlora} T.~Dettmers \emph{et al.}, ``QLoRA: Efficient finetuning of quantized LLMs,'' in \emph{Proc. NeurIPS}, 2023.
+\bibitem{mcnemar1947} Q.~McNemar, ``Note on the sampling error of the difference between correlated proportions or percentages,'' \emph{Psychometrika}, vol.~12, no.~2, pp.~153--157, 1947.
+\end{thebibliography}
+\end{document}
