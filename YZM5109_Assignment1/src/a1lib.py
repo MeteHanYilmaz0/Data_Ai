@@ -258,7 +258,13 @@ def run_condition(
         with open(path) as f:
             for line in f:
                 r = json.loads(line)
-                done[r["idx"]] = r
+                i = r["idx"]
+                if i >= len(items) or r["question"] != items[i]["question"]:
+                    raise ValueError(f"{path} was written for a different test set; use a new OUT_DIR.")
+                # Re-score cached outputs so a scorer fix applies to earlier generations too.
+                r["pred"], r["status"] = scorer(r["output"])
+                r["correct"] = is_correct(r["pred"], r["gold"])
+                done[i] = r
     todo = [i for i in range(len(items)) if i not in done]
     if not todo:
         print(f"[{name}] already complete ({len(done)} items), loading from {path}")
@@ -385,6 +391,9 @@ def train_lora(model, tok, train_items: list[dict], cfg: LoraTrainConfig, out_di
     print(f"Trainable params: {trainable:,} / {total:,} ({100 * trainable / total:.3f}%)")
 
     data = [x for x in (tokenize_sft(tok, it, cfg.max_len) for it in train_items) if x is not None]
+    if not data:
+        raise ValueError(f"No training example has answer tokens within max_len={cfg.max_len}; increase max_len.")
+    print(f"Training examples: {len(data)} (dropped {len(train_items) - len(data)} with no answer tokens in max_len)")
     device = next(model.parameters()).device
     base_dtype = next(p for p in model.parameters() if not p.requires_grad).dtype
     use_amp = device.type == "cuda" and base_dtype in (torch.float16, torch.bfloat16)

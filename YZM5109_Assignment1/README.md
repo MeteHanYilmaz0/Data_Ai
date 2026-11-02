@@ -10,12 +10,14 @@
 
 ## Çalıştırma
 
-1. `YZM5109_A1_OptionC.ipynb` dosyasını Colab'da aç. GitHub'dan aç ya da dosyayı yükle.
-2. `Runtime → Change runtime type → T4 GPU` seç.
-3. `QUICK_RUN = True` bırakıp `Run all` yap. Yaklaşık 5 dakika sürer ve her şeyin çalıştığını gösterir.
-4. `QUICK_RUN = False` yapıp tekrar `Run all` yap. T4'te tam test setiyle tahmini süre 1–1.5 saattir. Zamanın azsa `N_TEST = 500` yap.
-5. Colab bağlantıyı koparırsa yine `Run all` yap. Biten koşullar ve eğitilmiş adaptör Drive'dan yüklenir.
-6. Sonda inen zip içinden `results_table.tex` ve `fig_*.pdf` dosyalarını `report/` klasörüyle birlikte Overleaf'e yükle.
+1. Notebook'u Colab'da aç:
+   https://colab.research.google.com/github/MeteHanYilmaz0/Data_Ai/blob/ccr-36b08569-obh9ku/YZM5109_Assignment1/YZM5109_A1_OptionC.ipynb
+2. `Runtime → Change runtime type` menüsünden A100 seç. Yoksa L4, o da yoksa T4 seç.
+3. `Runtime → Run all` de. Drive izni isterse ver. Varsayılan ayarlar gerçek deneydir: tam test seti, 300 LoRA adımı.
+4. Colab bağlantıyı koparırsa yine `Run all` de. Biten koşullar ve eğitilmiş adaptör Drive'dan yüklenir.
+5. Sonda inen küçük zip'i aç ve içindekileri `results/full_run/` klasörüne yükle.
+
+Tahmini süre A100'de 30–40 dakika, L4'te yaklaşık 1 saat, T4'te 1.5–2 saattir.
 
 ## Dosyalar
 

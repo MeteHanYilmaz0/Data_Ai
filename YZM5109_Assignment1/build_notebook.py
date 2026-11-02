@@ -24,8 +24,8 @@ md(r"""
 
 All conditions share the same test items and the same greedy decoding (`do_sample=False`, `max_new_tokens=512`).
 
-**How to run:** `Runtime → Change runtime type → T4 GPU` (or better), then `Runtime → Run all`.
-Run once with `QUICK_RUN = True` (≈5 min) to check everything works, then set it to `False` for the real run.
+**How to run:** `Runtime → Change runtime type → A100` or `L4` (T4 also works, just slower), then `Runtime → Run all`.
+Defaults are the real experiment (full test set). Set `QUICK_RUN = True` for a ~5 min pipeline check.
 Predictions are written to Google Drive after every batch, so if Colab disconnects just run all cells again; finished work is skipped.
 """)
 
@@ -38,15 +38,22 @@ code("%%writefile a1lib.py\n" + LIB)
 
 md("## 1 · Configuration")
 code(r"""
-QUICK_RUN   = True          # True: 20 test items + 10 training steps, to verify the pipeline. Set False for the real run.
+QUICK_RUN   = False         # True: 20 test items + 10 training steps (~5 min pipeline check)
 USE_DRIVE   = True          # store results on Google Drive so a disconnect does not lose work
 RUN_FEWSHOT = False         # optional 5th condition (4-shot); adds ~1 condition worth of runtime
 
 MODEL_ID    = "Qwen/Qwen2.5-1.5B-Instruct"
 N_TEST      = None          # None = full GSM8K test set (1319). Use e.g. 500 if you are short on GPU time.
 SEED        = 42
-GEN_BATCH   = 32            # lowered automatically on OOM
+GEN_BATCH   = None          # None = pick from GPU memory (T4: 32, L4: 64, A100: 128); halves itself on OOM
 MAX_NEW_TOK = 512           # identical for every condition
+
+import torch
+assert torch.cuda.is_available(), "No GPU: Runtime -> Change runtime type -> L4 / A100 / T4 GPU, then run again."
+_gpu_mem = torch.cuda.get_device_properties(0).total_memory / 1e9
+if GEN_BATCH is None:
+    GEN_BATCH = 128 if _gpu_mem >= 38 else 64 if _gpu_mem >= 20 else 32
+print(f"GPU: {torch.cuda.get_device_name(0)}  {_gpu_mem:.0f} GB  ->  GEN_BATCH={GEN_BATCH}")
 
 import a1lib as L
 LORA_CFG = L.LoraTrainConfig(
