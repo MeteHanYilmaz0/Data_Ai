@@ -5,6 +5,7 @@ tests/smoke_test.py exercises it end to end with a tiny randomly initialised mod
 """
 from __future__ import annotations
 
+import ast
 import json
 import math
 import os
@@ -145,12 +146,31 @@ def extract_code(text: str) -> str:
     return re.sub(r"^```(?:python|py)?\s*\n", "", text.strip())
 
 
+def _print_last_expression(code: str) -> str:
+    """Mimic a notebook/REPL: if the program ends with a bare expression (e.g. `total_cost`),
+    print its value. Models frequently end PAL programs this way instead of calling print()."""
+    try:
+        tree = ast.parse(code)
+    except SyntaxError:
+        return code
+    if tree.body and isinstance(tree.body[-1], ast.Expr):
+        value = tree.body[-1].value
+        is_print = (isinstance(value, ast.Call) and isinstance(value.func, ast.Name)
+                    and value.func.id == "print")
+        if not is_print:
+            tree.body[-1] = ast.Expr(ast.Call(func=ast.Name("print", ast.Load()), args=[value], keywords=[]))
+            ast.fix_missing_locations(tree)
+            return ast.unparse(tree)
+    return code
+
+
 def run_pal(text: str, timeout: float = 5.0) -> tuple[str | None, str]:
-    code = extract_code(text)
+    """Answer = return value of solution() if defined, else the last printed value or bare final expression."""
+    code = _print_last_expression(extract_code(text))
     runner = (
         code
         + "\n\nif __name__ == '__main__':\n"
-        + "    if 'solution' in globals():\n"
+        + "    if callable(globals().get('solution')):\n"
         + "        print(solution())\n"
     )
     with tempfile.TemporaryDirectory() as tmp:

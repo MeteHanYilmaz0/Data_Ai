@@ -36,6 +36,13 @@ def unit_tests():
     assert L.run_pal("```python\ndef solution():\n    while True: pass\n```", timeout=1)[1] == "timeout"
     assert L.run_pal("```python\ndef solution():\n    return 1/0\n```")[1].startswith("error")
     assert L.run_pal("def solution():\n    return 2.5")[0] == "2.5"  # bare / unterminated code
+    # Failure modes seen in the real Colab quick run: top-level code ending in a bare expression.
+    assert L.run_pal("```python\nrate = 4 + 4/2\nt = 360 / rate / 60\nt\n```") == ("1", "ok")
+    assert L.run_pal("```python\na = 12\nb = a - 4\ncost = (a + b) / 5 * 3\ncost\n```") == ("12", "ok")
+    # Function defined and already printed by the model: still one answer.
+    assert L.run_pal("```python\ndef solution():\n    return 29\nprint(solution())\n```") == ("29", "ok")
+    # Bare call to solution() at the end.
+    assert L.run_pal("```python\ndef solution():\n    return 7\nsolution()\n```") == ("7", "ok")
     t = L.mcnemar_exact([True, False, False, True], [True, True, True, True])
     assert t["b01"] == 2 and t["b10"] == 0 and abs(t["p_value"] - 0.5) < 1e-9, t
     lo, hi = L.bootstrap_ci([True] * 50 + [False] * 50, n_boot=2000)
