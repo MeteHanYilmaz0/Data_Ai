@@ -7,7 +7,7 @@
 \begin{document}
 \title{Does One LoRA Run Beat Prompt Engineering?\\A Controlled Study on GSM8K with Qwen2.5-1.5B-Instruct}
 \author{\IEEEauthorblockN{Mete Han Y\i lmaz}
-\IEEEauthorblockA{YZM5109 Large Language Models, Y\i ld\i z Technical University\\\todo{student number, e-mail}}}
+\IEEEauthorblockA{Student No.\ 26587026\\YZM5109 Large Language Models, Y\i ld\i z Technical University}}
 \maketitle
 
 \begin{abstract}
@@ -74,15 +74,15 @@ test~\cite{mcnemar1947}, the appropriate test for paired binary outcomes on the 
 \section{Results}
 \begin{table}[t]\centering
 \caption{GSM8K test accuracy, $n{=}1{,}319$, identical greedy decoding. CI: 95\% bootstrap.
-Tokens: mean generated tokens. Trunc.: hit the 512-token limit. No ans.: no number could be extracted
-or the PAL program failed.}\label{tab:main}
-\small\setlength{\tabcolsep}{3.5pt}
-\begin{tabular}{lcccc}\toprule
-Condition & Acc. (\%) & 95\% CI & Tokens & Trunc./No ans. (\%) \\\midrule
-C1 Zero-shot direct & 70.9 & [68.4, 73.3] & 217 & 1.0 / 0.0 \\
-C2 Zero-shot CoT    & \textbf{75.4} & [73.0, 77.7] & 278 & 2.6 / 0.0 \\
-C3 PAL              & 59.7 & [57.0, 62.4] & 110 & 0.1 / 7.4 \\
-C4 LoRA + direct    & 59.6 & [56.9, 62.2] & 95  & 0.6 / 0.0 \\\bottomrule
+Tok.: mean generated tokens. Trunc.: \% of answers that hit the 512-token limit. No ans.: \% with no
+extractable number or a failed PAL program.}\label{tab:main}
+\setlength{\tabcolsep}{4pt}
+\begin{tabular}{lccccc}\toprule
+Condition & Acc. (\%) & 95\% CI & Tok. & Trunc. & No ans. \\\midrule
+C1 Direct  & 70.9 & [68.4, 73.3] & 217 & 1.0 & 0.0 \\
+C2 CoT     & \textbf{75.4} & [73.0, 77.7] & 278 & 2.6 & 0.0 \\
+C3 PAL     & 59.7 & [57.0, 62.4] & 110 & 0.1 & 7.4 \\
+C4 LoRA    & 59.6 & [56.9, 62.2] & 95  & 0.6 & 0.0 \\\bottomrule
 \end{tabular}\end{table}
 
 \begin{table}[t]\centering
