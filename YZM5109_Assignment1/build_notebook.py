@@ -216,13 +216,32 @@ json.dump(final, open(f"{OUT_DIR}/results.json", "w"), indent=2)
 open(f"{OUT_DIR}/results_table.tex", "w").write(L.latex_results_table(summary, LABELS))
 df.to_csv(f"{OUT_DIR}/summary.csv", index=False); dft.to_csv(f"{OUT_DIR}/mcnemar.csv", index=False)
 
-import shutil
-zip_path = shutil.make_archive("/content/YZM5109_A1_results", "zip", OUT_DIR)
-print("Saved:", zip_path)
+# Small zip for the report: everything except the LoRA weights (those stay on Drive / can go to the HF Hub).
+import zipfile
+zip_path = "/content/YZM5109_A1_results_small.zip"
+with zipfile.ZipFile(zip_path, "w", zipfile.ZIP_DEFLATED) as z:
+    for root, _, fnames in os.walk(OUT_DIR):
+        if "lora_adapter" in root:
+            continue
+        for fn in fnames:
+            full = os.path.join(root, fn)
+            z.write(full, os.path.relpath(full, OUT_DIR))
+print("Saved:", zip_path, f"{os.path.getsize(zip_path) / 1e6:.1f} MB")
 try:
     from google.colab import files; files.download(zip_path)
 except Exception as e:
     print("Download manually from the Files panel:", e)
+""")
+
+md("## 5b · Compact results to copy-paste (if you cannot upload files)")
+code(r"""
+compact = {"env": ENV, "summary": summary, "pairwise_mcnemar": tests,
+           "train": {k: v for k, v in train_stats.items() if k != "loss_log"},
+           "pal_status": pal_status.to_dict(),
+           "loss_every_10": [round(x["loss"], 4) for x in train_stats.get("loss_log", [])][::10],
+           "examples": {k: [{"q": a["question"][:400], "gold": a["gold"], "right": a["output"][:600],
+                             "wrong": b["output"][:600]} for a, b in v[:2]] for k, v in examples.items()}}
+print(json.dumps(compact, default=float))
 """)
 
 md(r"""
