@@ -1,0 +1,87 @@
+{
+  "lora": {
+    "r": 16,
+    "alpha": 32,
+    "dropout": 0.05,
+    "target_modules": [
+      "q_proj",
+      "k_proj",
+      "v_proj",
+      "o_proj",
+      "gate_proj",
+      "up_proj",
+      "down_proj"
+    ],
+    "lr": 0.0002,
+    "micro_batch_size": 4,
+    "grad_accum": 4,
+    "max_steps": 10,
+    "warmup_ratio": 0.05,
+    "max_len": 512,
+    "weight_decay": 0.0,
+    "max_grad_norm": 1.0,
+    "seed": 42,
+    "gradient_checkpointing": true,
+    "log_every": 2
+  },
+  "trainable_params": 18464768,
+  "total_params": 1562179072,
+  "trainable_pct": 1.1819879251333358,
+  "train_time_s": 50.44777178764343,
+  "train_examples_available": 7473,
+  "examples_seen": 160,
+  "tokens_seen": 30463,
+  "peak_gpu_mem_gb": 5.93286656,
+  "loss_log": [
+    {
+      "step": 1,
+      "loss": 0.5676271617412567,
+      "lr": 0.0002
+    },
+    {
+      "step": 2,
+      "loss": 0.5296869948506355,
+      "lr": 0.00019396926207859084
+    },
+    {
+      "step": 3,
+      "loss": 0.43326061964035034,
+      "lr": 0.0001766044443118978
+    },
+    {
+      "step": 4,
+      "loss": 0.45780058205127716,
+      "lr": 0.00015000000000000001
+    },
+    {
+      "step": 5,
+      "loss": 0.5207749083638191,
+      "lr": 0.00011736481776669306
+    },
+    {
+      "step": 6,
+      "loss": 0.38197769969701767,
+      "lr": 8.263518223330697e-05
+    },
+    {
+      "step": 7,
+      "loss": 0.3466397598385811,
+      "lr": 5.000000000000002e-05
+    },
+    {
+      "step": 8,
+      "loss": 0.36260512471199036,
+      "lr": 2.339555568810221e-05
+    },
+    {
+      "step": 9,
+      "loss": 0.45711906999349594,
+      "lr": 6.030737921409169e-06
+    },
+    {
+      "step": 10,
+      "loss": 0.42427201569080353,
+      "lr": 0.0
+    }
+  ]
+}

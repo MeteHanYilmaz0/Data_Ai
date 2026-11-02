@@ -1,0 +1,5 @@
+condition,n,accuracy,ci_low,ci_high,mean_gen_tokens,truncated_pct,no_answer_pct,mean_latency_s,label
+C1_direct,20,0.75,0.55,0.9,180.7,0.0,0.0,0.9301079511642456,C1 Zero-shot direct
+C2_cot,20,0.8,0.6,0.95,248.65,0.0,0.0,1.2109943747520446,C2 Zero-shot CoT
+C3_pal,20,0.05,0.0,0.15,92.15,0.0,90.0,0.34750622510910034,C3 PAL
+C4_lora,20,0.7,0.5,0.9,71.85,0.0,0.0,0.712245512008667,C4 LoRA FT + direct
