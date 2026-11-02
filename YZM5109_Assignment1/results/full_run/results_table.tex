@@ -1,0 +1,15 @@
+\begin{table}[t]
+\centering
+\caption{GSM8K test accuracy (greedy decoding, identical settings). 95\% bootstrap CI.}
+\label{tab:main}
+\begin{tabular}{lccc}
+\toprule
+Condition & Acc. (\%) & 95\% CI & Avg. tokens \\
+\midrule
+C1 Zero-shot direct & 70.9 & [68.4, 73.3] & 217 \\
+C2 Zero-shot CoT & 75.4 & [73.0, 77.7] & 278 \\
+C3 PAL & 59.7 & [57.0, 62.4] & 110 \\
+C4 LoRA FT + direct & 59.6 & [56.9, 62.2] & 95 \\
+\bottomrule
+\end{tabular}
+\end{table}

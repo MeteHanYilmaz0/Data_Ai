@@ -1,0 +1,103 @@
+{
+  "n": 1319,
+  "arithmetic": {
+    "C1_direct": {
+      "equations": 1899,
+      "eq_per_item": 1.43972706595906,
+      "error_rate": 0.037914691943127965,
+      "items_with_error": 64,
+      "wrong_items": 384,
+      "wrong_with_arith_error": 30
+    },
+    "C2_cot": {
+      "equations": 1830,
+      "eq_per_item": 1.3874147081122061,
+      "error_rate": 0.03114754098360656,
+      "items_with_error": 47,
+      "wrong_items": 325,
+      "wrong_with_arith_error": 16
+    },
+    "C4_lora": {
+      "equations": 3518,
+      "eq_per_item": 2.667172100075815,
+      "error_rate": 0.03496304718590108,
+      "items_with_error": 105,
+      "wrong_items": 533,
+      "wrong_with_arith_error": 85
+    }
+  },
+  "latex_pct": {
+    "C1_direct": 55.19332827899924,
+    "C2_cot": 70.96285064442759,
+    "C4_lora": 0.0
+  },
+  "median_tokens": {
+    "C1_direct": 211,
+    "C2_cot": 261,
+    "C3_pal": 103,
+    "C4_lora": 84
+  },
+  "oracle": {
+    "C2|C3": 0.8188021228203184,
+    "C1|C4": 0.7952994692949203,
+    "any": 0.8824867323730099,
+    "all_right": 0.38059135708870356,
+    "all_wrong": 0.11751326762699014
+  },
+  "cot_pal_agreement": {
+    "n": 749,
+    "pct": 56.785443517816525,
+    "acc_when_agree": 0.9359145527369827,
+    "acc_when_disagree_cot": 0.5140350877192983
+  },
+  "pal": {
+    "executable_pct": 92.64594389689158,
+    "acc_executable": 0.644026186579378,
+    "no_output": 85,
+    "runtime_error": 12,
+    "timeout": 0
+  },
+  "acc_by_steps": {
+    "1-2": {
+      "n": 326,
+      "C1_direct": 0.8190184049079755,
+      "C2_cot": 0.8619631901840491,
+      "C3_pal": 0.7791411042944786,
+      "C4_lora": 0.7515337423312883
+    },
+    "3": {
+      "n": 371,
+      "C1_direct": 0.7358490566037735,
+      "C2_cot": 0.8140161725067385,
+      "C3_pal": 0.6361185983827493,
+      "C4_lora": 0.6495956873315364
+    },
+    "4": {
+      "n": 297,
+      "C1_direct": 0.6666666666666666,
+      "C2_cot": 0.7037037037037037,
+      "C3_pal": 0.5252525252525253,
+      "C4_lora": 0.5656565656565656
+    },
+    "5": {
+      "n": 175,
+      "C1_direct": 0.6571428571428571,
+      "C2_cot": 0.7085714285714285,
+      "C3_pal": 0.49142857142857144,
+      "C4_lora": 0.46285714285714286
+    },
+    "6+": {
+      "n": 150,
+      "C1_direct": 0.5466666666666666,
+      "C2_cot": 0.52,
+      "C3_pal": 0.36666666666666664,
+      "C4_lora": 0.34
+    }
+  },
+  "pal_sensitivity_last_assignment": {
+    "primary_acc": 0.5966641394996209,
+    "no_output_recovered": 85,
+    "recovered_correct": 58,
+    "lenient_acc": 0.640636846095527
+  }
+}
