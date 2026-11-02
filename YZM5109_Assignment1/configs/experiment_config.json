@@ -1,0 +1,65 @@
+{
+  "model_id": "Qwen/Qwen2.5-1.5B-Instruct",
+  "dataset_id": "openai/gsm8k (config: main)",
+  "splits": {
+    "train": 7473,
+    "validation": 0,
+    "test": 1319,
+    "selection": "Full train and full test splits, no subsampling. No validation split: prompts and hyperparameters were fixed before evaluation and not tuned."
+  },
+  "seed": 42,
+  "hardware": "1x NVIDIA A100-SXM4-40GB (Google Colab), bf16",
+  "software": {
+    "torch": "2.11.0+cu130",
+    "transformers": "5.22.1",
+    "peft": "0.21.2",
+    "datasets": "5.1.0"
+  },
+  "decoding": {
+    "do_sample": false,
+    "max_new_tokens": 512,
+    "repetition_penalty": 1.0,
+    "batch_size": 128,
+    "same_for_all_conditions": true
+  },
+  "lora": {
+    "r": 16,
+    "alpha": 32,
+    "dropout": 0.05,
+    "target_modules": [
+      "q_proj",
+      "k_proj",
+      "v_proj",
+      "o_proj",
+      "gate_proj",
+      "up_proj",
+      "down_proj"
+    ],
+    "lr": 0.0002,
+    "micro_batch_size": 4,
+    "grad_accum": 4,
+    "max_steps": 300,
+    "warmup_ratio": 0.05,
+    "max_len": 512,
+    "weight_decay": 0.0,
+    "max_grad_norm": 1.0,
+    "seed": 42,
+    "gradient_checkpointing": true,
+    "log_every": 10,
+    "effective_batch_size": 16,
+    "scheduler": "5% linear warm-up then cosine decay",
+    "optimizer": "AdamW",
+    "loss": "response tokens only",
+    "trainable_params": 18464768,
+    "trainable_pct": 1.18,
+    "train_time_s": 552.2,
+    "examples_seen": 4800,
+    "tokens_seen": 932950,
+    "peak_gpu_mem_gb": 7.13
+  },
+  "parsing": {
+    "text_conditions": "number after 'The answer is', else \\boxed{}, else last number in output",
+    "pal": "run program in isolated subprocess (5 s timeout); value of solution(), else last printed value or final bare expression",
+    "correct_if": "|pred - gold| < 1e-4"
+  }
+}

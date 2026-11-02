@@ -1,0 +1,5 @@
+condition,label,n_test,accuracy_pct,ci95_low_pct,ci95_high_pct,valid_format_pct,mean_gen_tokens
+C1_direct,C1 Zero-shot direct,1319,70.89,68.39,73.31,96.51,216.7
+C2_cot,C2 Zero-shot CoT,1319,75.36,73.01,77.71,95.6,277.6
+C3_pal,C3 PAL (program-aided),1319,59.67,57.01,62.4,92.65,109.9
+C4_lora,C4 LoRA FT + direct,1319,59.59,56.94,62.24,99.39,94.9

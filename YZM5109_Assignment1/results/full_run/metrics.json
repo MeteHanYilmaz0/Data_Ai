@@ -1,0 +1,94 @@
+{
+  "metrics": [
+    {
+      "condition": "C1_direct",
+      "label": "C1 Zero-shot direct",
+      "n_test": 1319,
+      "accuracy_pct": 70.89,
+      "ci95_low_pct": 68.39,
+      "ci95_high_pct": 73.31,
+      "valid_format_pct": 96.51,
+      "mean_gen_tokens": 216.7
+    },
+    {
+      "condition": "C2_cot",
+      "label": "C2 Zero-shot CoT",
+      "n_test": 1319,
+      "accuracy_pct": 75.36,
+      "ci95_low_pct": 73.01,
+      "ci95_high_pct": 77.71,
+      "valid_format_pct": 95.6,
+      "mean_gen_tokens": 277.6
+    },
+    {
+      "condition": "C3_pal",
+      "label": "C3 PAL (program-aided)",
+      "n_test": 1319,
+      "accuracy_pct": 59.67,
+      "ci95_low_pct": 57.01,
+      "ci95_high_pct": 62.4,
+      "valid_format_pct": 92.65,
+      "mean_gen_tokens": 109.9
+    },
+    {
+      "condition": "C4_lora",
+      "label": "C4 LoRA FT + direct",
+      "n_test": 1319,
+      "accuracy_pct": 59.59,
+      "ci95_low_pct": 56.94,
+      "ci95_high_pct": 62.24,
+      "valid_format_pct": 99.39,
+      "mean_gen_tokens": 94.9
+    }
+  ],
+  "mcnemar": [
+    {
+      "a": "C1_direct",
+      "b": "C2_cot",
+      "b01": 157,
+      "b10": 98,
+      "p_value": 0.0002654757693886602,
+      "delta_acc": 0.04473085670962851
+    },
+    {
+      "a": "C1_direct",
+      "b": "C3_pal",
+      "b01": 127,
+      "b10": 275,
+      "p_value": 1.2069059497194575e-13,
+      "delta_acc": -0.11220621683093253
+    },
+    {
+      "a": "C1_direct",
+      "b": "C4_lora",
+      "b01": 114,
+      "b10": 263,
+      "p_value": 1.123791605201433e-14,
+      "delta_acc": -0.11296436694465505
+    },
+    {
+      "a": "C2_cot",
+      "b": "C3_pal",
+      "b01": 86,
+      "b10": 293,
+      "p_value": 1.563635322140346e-27,
+      "delta_acc": -0.15693707354056102
+    },
+    {
+      "a": "C2_cot",
+      "b": "C4_lora",
+      "b01": 89,
+      "b10": 297,
+      "p_value": 2.8669471280789635e-27,
+      "delta_acc": -0.15769522365428354
+    },
+    {
+      "a": "C3_pal",
+      "b": "C4_lora",
+      "b01": 200,
+      "b10": 201,
+      "p_value": 1.0,
+      "delta_acc": -0.000758150113722517
+    }
+  ]
+}

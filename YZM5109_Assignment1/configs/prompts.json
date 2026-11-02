@@ -1,0 +1,8 @@
+{
+  "system": "You are a helpful assistant.",
+  "C1_direct": "Solve the following math problem.\n\nQuestion: {question}\n\nEnd your response with \"The answer is: <number>\".",
+  "C2_cot": "Solve the following math problem. Let's think step by step: break the problem into smaller steps, write out every intermediate calculation, and check the result before answering.\n\nQuestion: {question}\n\nEnd your response with \"The answer is: <number>\".",
+  "C3_pal": "Write a Python function named `solution()` that solves the following math problem and returns the final numeric answer. Use descriptive variable names and simple arithmetic. Do not use input() or external libraries. Reply with a single ```python code block only.\n\nQuestion: {question}",
+  "C4_lora_eval": "identical to C1_direct",
+  "C4_lora_train_target": "{gsm8k_rationale_without_calculator_tags}\nThe answer is: {gold}"
+}

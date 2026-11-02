@@ -1,0 +1,63 @@
+\documentclass[11pt,a4paper]{article}
+\usepackage[margin=2.2cm]{geometry}
+\usepackage{booktabs,array,enumitem}
+\usepackage[hidelinks]{hyperref}
+\setlist{itemsep=2pt,topsep=3pt}
+\begin{document}
+\begin{center}
+{\Large\bfseries AI Usage Log}\\[4pt]
+YZM5109 Large Language Models -- Assignment I (Option C)\\
+Mete Han Y\i lmaz, Student No.\ 26587026
+\end{center}
+
+\section*{1. Tools used}
+\begin{tabular}{@{}>{\raggedright\arraybackslash}p{0.27\linewidth}>{\raggedright\arraybackslash}p{0.68\linewidth}@{}}\toprule
+Tool & Use \\\midrule
+Claude (Anthropic), through Claude Code in a cloud session & Experiment design, all Python code, post-hoc analysis, report text, this log, the submission package. \\
+Google Colab (A100 GPU) & Running the experiments. Run by the student; not an AI tool. \\\bottomrule
+\end{tabular}
+
+\section*{2. Key prompts and outputs}
+The student wrote the prompts in Turkish; they are translated here.
+\begin{enumerate}
+\item \textbf{Prompt:} ``Can you see and explain this assignment PDF? How should we do it? Could you
+handle the work overnight via Colab and Hugging Face?'' The PDF link could not be opened from the AI
+session, so the student pasted the assignment text.\\
+\textbf{Output:} Choice of Option C with Qwen2.5-1.5B-Instruct and GSM8K, and four conditions: direct,
+zero-shot chain-of-thought, PAL, and LoRA evaluated with the direct prompt. The AI also produced a
+self-contained Colab notebook, a helper library, a CPU smoke test with a tiny random model, and an IEEE
+report draft. The AI session had no GPU and no access to Hugging Face or Colab, so it could not run the
+real experiment.
+\item \textbf{Prompt:} The student uploaded the results of a 20-item pipeline check run on Colab.\\
+\textbf{Output:} The AI found a bug in its own PAL scorer. Programs ending in a bare expression, such as
+\texttt{total\_cost}, were scored as ``no output''. The scorer was fixed to print the final bare expression,
+and regression tests were added. \emph{Disclosure:} this check used 20 test-split items. Only the
+answer-parsing code changed; prompts, decoding settings and hyperparameters were not changed.
+\item \textbf{Prompt:} ``Make sure the notebook is error-free.'' and ``Colab Pro lets us use L4 or A100.''\\
+\textbf{Output:} The notebook was hardened with a GPU check, automatic batch size, resume-safe rescoring
+and real-run defaults, and A100 was recommended.
+\item \textbf{Prompt:} The student uploaded the full-run results zip.\\
+\textbf{Output:} Post-hoc analysis script covering arithmetic error rate, accuracy by problem length,
+complementarity and a PAL sensitivity check. The AI also completed the report and compiled it to PDF.
+\item \textbf{Prompt:} The student uploaded this assignment form: ``Prepare the file I will submit according to it.''\\
+\textbf{Output:} The AI checked the submission against the form. It added a second metric (answer validity rate),
+prediction CSVs, an evaluation script with a terminal screenshot of the scores, configuration and prompt
+files, error examples, a prompt appendix, this log and the ZIP package.
+\end{enumerate}
+
+\section*{3. What the student did}
+\begin{itemize}
+\item Chose to follow the proposed design and selected the GPU type.
+\item Ran the pipeline check and the full experiment on Google Colab (NVIDIA A100-40GB) and supplied all result files.
+\item Reviewed the code, the results and the report before submission.
+\end{itemize}
+
+\section*{4. Verification}
+\begin{itemize}
+\item All numbers in the report come from the saved per-item predictions of the Colab run. They are
+recomputed by \texttt{evaluate.py} and \texttt{analysis/deep\_analysis.py}, and \texttt{screenshots/} shows that output.
+\item The pipeline was tested end to end on CPU with a tiny random model, including the resume path,
+before it ran on GPU.
+\item Concrete model failures quoted in the report were read from the raw outputs, not generated.
+\end{itemize}
+\end{document}

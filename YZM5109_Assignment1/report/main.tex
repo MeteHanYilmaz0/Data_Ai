@@ -1,8 +1,7 @@
-% YZM5109 Assignment I -- IEEE conference format. Upload this folder to Overleaf and compile with pdfLaTeX.
+% YZM5109 Assignment I -- IEEE conference format (pdfLaTeX).
 \documentclass[conference]{IEEEtran}
-\usepackage{booktabs,graphicx,amsmath,url,xcolor}
+\usepackage{booktabs,graphicx,amsmath,url,xcolor,array}
 \usepackage[hidelinks]{hyperref}
-\newcommand{\todo}[1]{\textcolor{red}{[TODO: #1]}}
 
 \begin{document}
 \title{Does One LoRA Run Beat Prompt Engineering?\\A Controlled Study on GSM8K with Qwen2.5-1.5B-Instruct}
@@ -12,194 +11,169 @@
 
 \begin{abstract}
 We test whether a single LoRA fine-tuning run outperforms prompt engineering on grade-school math
-(GSM8K) with Qwen2.5-1.5B-Instruct. Four conditions are evaluated on all 1{,}319 test problems with
-identical greedy decoding: zero-shot direct prompting (C1), zero-shot chain-of-thought (C2),
+(GSM8K) with Qwen2.5-1.5B-Instruct (Option C). Four conditions are evaluated on all 1{,}319 test problems
+with identical greedy decoding: zero-shot direct prompting (C1), zero-shot chain-of-thought (C2),
 Program-Aided Language modelling (PAL, C3), and a LoRA fine-tune evaluated with the exact C1 prompt (C4).
-Zero-shot CoT is best (75.4\%), 4.5 points above direct prompting (70.9\%, McNemar $p{=}2.7{\times}10^{-4}$).
-The fine-tuned model is \emph{worse} than the untouched model (59.6\%, $-11.3$ points, $p{<}10^{-13}$),
-despite training only 1.18\% of the parameters for 9 minutes. Per-item analysis explains why: fine-tuning
-on the human-written GSM8K solutions shortened the model's reasoning by 56\%, and the accuracy gap to the
-original model grows from 7 to 21 points as problems get longer, while per-equation arithmetic accuracy is
-unchanged. The model's own reasoning style was better supervision than the dataset's references.
+Zero-shot CoT is best (75.4\% accuracy), 4.5 points above direct prompting (70.9\%, McNemar
+$p{=}2.7{\times}10^{-4}$). The fine-tuned model is \emph{worse} than the untouched model (59.6\%, $-11.3$
+points, $p{<}10^{-13}$), although it has the highest answer-format validity (99.4\%). Per-item analysis
+explains the drop: fine-tuning on the human-written GSM8K solutions shortened the model's reasoning by 56\%,
+and the gap to the original model grows from 7 to 21 points as problems get longer, while per-equation
+arithmetic accuracy is unchanged.
 \end{abstract}
 
 \section{Introduction}
-A pretrained LLM can be adapted to a task by changing its inputs (prompting) or its weights
-(fine-tuning). Prompting costs nothing at training time but can lengthen every answer; low-rank adaptation
+A pretrained LLM can be adapted to a task by changing its inputs (prompting) or its weights (fine-tuning).
+Prompting costs nothing at training time but can lengthen every answer. Low-rank adaptation
 (LoRA)~\cite{hu2022lora} trains a small fraction of the parameters but needs labelled data and GPU time.
-For small \emph{instruction-tuned} models the trade-off is not obvious: such models have already been
-tuned heavily on reasoning data, so a short task-specific fine-tune may help, do nothing, or hurt.
-We answer the assignment's question, \emph{does one LoRA fine-tuning run outperform prompting on the
-original model?}, in a controlled setting where only the adaptation technique varies, and we use the
-per-item predictions to explain the outcome rather than only report it.
+For small \emph{instruction-tuned} models the trade-off is unclear: they are already tuned heavily on
+reasoning data, so a short task-specific fine-tune may help, do nothing, or hurt. We answer the question
+\emph{does one LoRA fine-tuning run outperform prompting on the original model?} in a controlled setting
+where only the adaptation technique varies, and we use the per-item predictions to explain the outcome.
+\textbf{Findings:} prompting wins; zero-shot CoT is best; the fine-tuned model loses 11.3 points because it
+learned to reason more briefly, which hurts most on long problems.
 
-\section{Experimental Setup}
-\subsection{Model and data}
-\textbf{Model.} Qwen2.5-1.5B-Instruct~\cite{qwen25}, a 1.56B-parameter decoder-only transformer with
-grouped-query attention, the largest recommended size that trains comfortably on one GPU.
-\textbf{Dataset.} GSM8K~\cite{cobbe2021gsm8k}: 7{,}473 training and 1{,}319 test problems, each with a
-human-written step-by-step solution and one numeric answer. A numeric answer allows unambiguous exact-match
-scoring, avoiding the judge noise of free-text tasks. All 1{,}319 test problems are used.
+\section{Dataset, Model, and Methods}
+\subsection{Dataset and model}
+\textbf{Dataset:} GSM8K (\texttt{openai/gsm8k}, config \texttt{main})~\cite{cobbe2021gsm8k}: grade-school
+word problems with a human-written step-by-step solution and one numeric answer. We use the full splits
+without subsampling: 7{,}473 training problems (for C4 and nothing else), no validation split, and all
+1{,}319 test problems for every condition. No validation split is needed because prompts and
+hyperparameters were fixed before any evaluation and were not tuned. Preprocessing removes the calculator
+annotations \texttt{<<\ldots>>} from the reference solutions and takes the number after \texttt{\#\#\#\#}
+as the gold answer. \textbf{Model:} \texttt{Qwen/Qwen2.5-1.5B-Instruct}~\cite{qwen25}, a 1.56B-parameter
+decoder-only transformer, the largest recommended size that trains comfortably on one GPU.
 
-\subsection{Conditions}
-Every condition uses the same system prompt (``You are a helpful assistant.'') and the same answer-format
-instruction (\emph{End your response with ``The answer is: $<$number$>$''}), so output format is held fixed.
+\subsection{Experimental conditions}
+All conditions share the system prompt ``You are a helpful assistant.'' and the instruction \emph{End your
+response with ``The answer is: $<$number$>$''}, so the output format is held fixed. Exact prompts are in
+Appendix~\ref{app:prompts}.
 \begin{itemize}
-\item \textbf{C1 Zero-shot direct:} ``Solve the following math problem. Question: \ldots'' plus the format line.
-\item \textbf{C2 Zero-shot CoT}~\cite{kojima2022large,wei2022chain}: C1 plus an explicit instruction to
-reason step by step, write out every intermediate calculation and check the result.
-\item \textbf{C3 PAL}~\cite{gao2023pal}: the model writes a Python function \texttt{solution()}; we run it
-in an isolated subprocess (5\,s timeout) and score its return value, delegating arithmetic to the interpreter.
-\item \textbf{C4 LoRA:} the original model fine-tuned once with LoRA, evaluated with the \emph{identical}
-C1 prompt. Prompting techniques are not re-applied to C4.
+\item \textbf{C1 Zero-shot direct:} the question with a plain ``Solve the following math problem.''
+\item \textbf{C2 Zero-shot CoT}~\cite{kojima2022large,wei2022chain}: C1 plus an instruction to reason step
+by step, write out every intermediate calculation and check the result.
+\item \textbf{C3 PAL}~\cite{gao2023pal}: the model writes a Python function \texttt{solution()}; we execute it
+in an isolated subprocess with a 5\,s timeout. Arithmetic is delegated to the interpreter.
+\item \textbf{C4 LoRA:} the original model fine-tuned once and evaluated with the \emph{identical} C1 prompt.
+Prompting techniques are not re-applied to C4.
 \end{itemize}
 
 \subsection{Fine-tuning (C4)}
-Training pairs are (C1 prompt, reference solution): the GSM8K rationale with its calculator annotations
-\texttt{<<\ldots>>} removed, followed by ``The answer is: $N$''. The loss is computed on response tokens only.
-LoRA adapters ($r{=}16$, $\alpha{=}32$, dropout 0.05) are attached to all attention and MLP projections
-(\texttt{q,k,v,o,gate,up,down}), giving 18.46M trainable parameters (1.18\%). We use AdamW, learning rate
-$2{\times}10^{-4}$ with 5\% warm-up and cosine decay, effective batch 16 (4 $\times$ 4 gradient accumulation),
-300 optimiser steps (4{,}800 examples, 0.64 epochs, 0.93M tokens), maximum length 512, gradient
-checkpointing and bf16 mixed precision on one NVIDIA A100-40GB.
+Inputs are C1 prompts; targets are the cleaned reference solutions followed by ``The answer is: $N$''. The
+loss covers response tokens only. LoRA ($r{=}16$, $\alpha{=}32$, dropout 0.05) is applied to all attention
+and MLP projections (\texttt{q,k,v,o,gate,up,down}): 18.46M trainable parameters, 1.18\% of the model.
+AdamW, learning rate $2{\times}10^{-4}$, 5\% warm-up then cosine decay, effective batch 16, 300 steps
+(4{,}800 examples, 0.64 epochs, 0.93M tokens), maximum length 512, gradient checkpointing, bf16, seed 42.
+Training took 9.2 minutes on one NVIDIA A100-40GB (Google Colab) with 7.1\,GB peak memory. The loss fell
+from about 0.6 to a plateau of about 0.41 within roughly 50 steps.
 
-\subsection{Decoding and evaluation}
-Decoding is identical for every condition: greedy (\texttt{do\_sample=False}), at most 512 new tokens, no
-repetition penalty. The predicted answer is the number after ``The answer is'', falling back to
-\texttt{\textbackslash boxed\{\}} and then to the last number in the output; for PAL it is the program's
-result. A prediction is correct if it equals the reference within $10^{-4}$. We report accuracy with 95\%
-bootstrap CIs (10{,}000 resamples) and compare every pair of conditions with an exact two-sided McNemar
-test~\cite{mcnemar1947}, the appropriate test for paired binary outcomes on the same items.
+\subsection{Decoding and answer parsing}
+Decoding is identical for all conditions: greedy, at most 512 new tokens, no repetition penalty, batch 128.
+For C1, C2 and C4 the prediction is the number after ``The answer is'', falling back to
+\texttt{\textbackslash boxed\{\}} and then to the last number. For C3 it is the value of \texttt{solution()},
+else the last printed value or the program's final bare expression. Software: PyTorch 2.11,
+Transformers 5.22.1, PEFT 0.21.2.
 
-\section{Results}
+\section{Evaluation Metrics}
+\textbf{Accuracy} (primary): the share of test problems whose predicted number equals the reference within
+$10^{-4}$. GSM8K has exactly one numeric answer, so exact match is unambiguous and needs no judge model.
+We report 95\% bootstrap confidence intervals (10{,}000 resamples) and compare conditions with exact
+two-sided McNemar tests~\cite{mcnemar1947}, which suit paired binary outcomes on the same items.
+\textbf{Answer validity rate}: the share of outputs that follow the required format, i.e.\ contain ``The
+answer is: $<$number$>$''; for PAL, the share of programs that run and return a number. It separates
+\emph{failing to give a usable answer} from \emph{giving a wrong answer}, which matters for PAL, whose
+programs can crash, and for C4, whose output style fine-tuning changes.
+\textbf{Mean generated tokens}: inference cost, since prompting techniques trade accuracy for longer outputs.
+
+\section{Results and Discussion}
 \begin{table}[t]\centering
-\caption{GSM8K test accuracy, $n{=}1{,}319$, identical greedy decoding. CI: 95\% bootstrap.
-Tok.: mean generated tokens. Trunc.: \% of answers that hit the 512-token limit. No ans.: \% with no
-extractable number or a failed PAL program.}\label{tab:main}
-\setlength{\tabcolsep}{4pt}
+\caption{Results on the GSM8K test set, identical greedy decoding. Valid: answer validity rate.
+Tok.: mean generated tokens.}\label{tab:main}
+\setlength{\tabcolsep}{3.6pt}
 \begin{tabular}{lccccc}\toprule
-Condition & Acc. (\%) & 95\% CI & Tok. & Trunc. & No ans. \\\midrule
-C1 Direct  & 70.9 & [68.4, 73.3] & 217 & 1.0 & 0.0 \\
-C2 CoT     & \textbf{75.4} & [73.0, 77.7] & 278 & 2.6 & 0.0 \\
-C3 PAL     & 59.7 & [57.0, 62.4] & 110 & 0.1 & 7.4 \\
-C4 LoRA    & 59.6 & [56.9, 62.2] & 95  & 0.6 & 0.0 \\\bottomrule
+Condition & $n$ & Acc. (\%) & 95\% CI & Valid (\%) & Tok. \\\midrule
+C1 Direct & 1319 & 70.9 & [68.4, 73.3] & 96.5 & 217 \\
+C2 CoT    & 1319 & \textbf{75.4} & [73.0, 77.7] & 95.6 & 278 \\
+C3 PAL    & 1319 & 59.7 & [57.0, 62.4] & 92.6 & 110 \\
+C4 LoRA   & 1319 & 59.6 & [56.9, 62.2] & \textbf{99.4} & 95 \\\bottomrule
 \end{tabular}\end{table}
 
 \begin{table}[t]\centering
-\caption{Paired exact McNemar tests for ``X vs.\ Y''. $b$: items only X solves; $c$: items only Y solves.}\label{tab:mcnemar}
+\caption{Exact McNemar tests for ``X vs.\ Y''. $b$: items only X solves; $c$: items only Y solves.}\label{tab:mcnemar}
 \begin{tabular}{lcccc}\toprule
 Comparison & $\Delta$Acc. (pts) & $b$ & $c$ & $p$ \\\midrule
-C2 vs. C1 & $+4.5$  & 157 & 98  & $2.7{\times}10^{-4}$ \\
-C3 vs. C1 & $-11.2$ & 127 & 275 & $1.2{\times}10^{-13}$ \\
-C4 vs. C1 & $-11.3$ & 114 & 263 & $1.1{\times}10^{-14}$ \\
-C4 vs. C2 & $-15.8$ & 89  & 297 & $2.9{\times}10^{-27}$ \\
-C4 vs. C3 & $-0.1$  & 200 & 201 & $1.0$ \\\bottomrule
+C2 vs.\ C1 & $+4.5$  & 157 & 98  & $2.7{\times}10^{-4}$ \\
+C3 vs.\ C1 & $-11.2$ & 127 & 275 & $1.2{\times}10^{-13}$ \\
+C4 vs.\ C1 & $-11.3$ & 114 & 263 & $1.1{\times}10^{-14}$ \\
+C4 vs.\ C2 & $-15.8$ & 89  & 297 & $2.9{\times}10^{-27}$ \\
+C4 vs.\ C3 & $-0.1$  & 200 & 201 & $1.0$ \\\bottomrule
 \end{tabular}\end{table}
 
+\textbf{Overview.} Table~\ref{tab:main} gives the ranking C2 $>$ C1 $>$ C3 $\approx$ C4; all differences are
+significant except C3 vs.\ C4 (Table~\ref{tab:mcnemar}). Explicit CoT gains 4.5 points at 28\% more
+tokens. The fine-tuned model loses 11.3 points to the model it was trained from, while being the most
+format-compliant condition: fine-tuning taught the format but not better reasoning. On cost, prompting needs
+no training. C4 needed 9.2 minutes of A100 time, and its unmerged adapters made it slower per item
+(0.27\,s vs.\ 0.17\,s for C1) despite shorter outputs; merging them into the base weights would remove this.
+
+\textbf{Why fine-tuning hurt.} The median C4 answer has 84 tokens against 211 for C1: C4 copied the terse
+style of the references (55\% of C1 answers use LaTeX derivations, 0\% of C4 answers). The loss concentrates
+on long problems (Fig.~\ref{fig:steps}). The C1$-$C4 gap is 6.7 points for problems with 1--2 reference steps
+and 8.6, 10.1, 19.4 and 20.7 points for 3, 4, 5 and 6+ steps. Arithmetic is not the cause: re-evaluating every
+equation ``\emph{expression} $=$ \emph{number}'' in the outputs gives similar per-equation error rates for C1
+(3.8\%), C2 (3.1\%) and C4 (3.5\%). C4 errors are planning errors with correct arithmetic (Table~\ref{tab:errors}).
+Qwen2.5-Instruct was already post-trained heavily on math, and its own derivations are longer and more
+careful than the human references, so supervised fine-tuning on them imitates a weaker teacher. The low
+initial loss and early plateau suggest that more steps would not help. Training on the model's own verified
+solutions (rejection-sampling fine-tuning, STaR~\cite{zelikman2022star,yuan2023scaling}) is the natural fix.
+
 \begin{figure}[t]\centering
-\includegraphics[width=0.92\linewidth]{fig_accuracy.pdf}
-\caption{Accuracy per condition with 95\% bootstrap CIs.}\label{fig:acc}
+\includegraphics[width=0.9\linewidth]{fig_steps.pdf}
+\caption{Accuracy by number of steps in the reference solution (bucket sizes 326, 371, 297, 175, 150).}\label{fig:steps}
 \end{figure}
 
-Table~\ref{tab:main} and Fig.~\ref{fig:acc} show a clear ranking: C2 $>$ C1 $>$ C3 $\approx$ C4. Every
-difference is significant except C3 vs.\ C4 (Table~\ref{tab:mcnemar}). Explicit CoT gains 4.5 points over
-direct prompting at a cost of 28\% more tokens. The fine-tuned model loses 11.3 points against the very
-model it was trained from. Fine-tuning did not fail to run: the training loss fell from about 0.6 to a plateau
-of about 0.41 within roughly 50 steps (Fig.~\ref{fig:loss}).
+\textbf{Why PAL did not help.} PAL removes arithmetic errors, but at about 3\% per equation there are few to
+remove. Its own failures are larger. 7.4\% of programs gave no answer: 85 ended with an assignment instead of
+the requested \texttt{solution()} function, 12 raised errors, and none timed out. Only 64.4\% of executable
+programs were correct, because turning a word problem into code is itself a reasoning step. As a sensitivity
+check, \emph{not} our primary metric, reading the last assigned variable of those 85 programs raises PAL to
+64.1\%, still 6.8 points below C1.
+
+\textbf{Direct prompting is already implicit CoT.} At 217 tokens, C1 is not answer-only: the
+instruction-tuned model reasons step by step unprompted, so explicit CoT adds structure on top of existing
+reasoning and the gain is moderate.
+
+\textbf{Complementarity.} 88.2\% of problems are solved by at least one condition but only 38.1\% by all four.
+When CoT and PAL agree (56.8\% of items) the answer is correct 93.6\% of the time, against 51.4\% CoT accuracy
+on the rest, a cheap confidence signal for deciding when to trust an answer.
 
 \begin{table}[t]\centering
-\caption{Cost of each approach.}\label{tab:cost}
-\begin{tabular}{lcc}\toprule
- & Prompting (C1--C3) & LoRA (C4) \\\midrule
-Trainable parameters & 0 & 18.46M (1.18\%) \\
-Training time (A100) & 0 & 9.2 min \\
-Peak GPU memory, training & -- & 7.1 GB \\
-Mean generated tokens & 217 / 278 / 110 & 95 \\
-Latency per item, batch 128 & 0.17 / 0.18 / 0.09 s & 0.27 s \\\bottomrule
+\caption{Error examples from the test set (sample ID = test-split index).}\label{tab:errors}
+\footnotesize\setlength{\tabcolsep}{2.5pt}
+\begin{tabular}{@{}l>{\raggedright\arraybackslash}p{0.50\linewidth}c>{\raggedright\arraybackslash}p{0.17\linewidth}@{}}\toprule
+ID/Cond. & Problem (abridged) and model behaviour & Gold/Pred. & Failure type \\\midrule
+506/C2 & 6 dogs, 4 legs each, snowshoes sold in pairs at \$12. Treats a pair as covering 4 legs. & 144/72 & World-knowledge misreading \\
+1018/C2 & 10 min per 3 pages, reads 18 pages. Computes pages/min and multiplies by pages. & 60/5.4 & Inverted rate (units) \\
+309/C4 & Extra arm every 3 days, extra leg every 5 days, 15 days. Counts only the arms. & 8/5 & Dropped constraint \\
+988/C4 & Saves \$500/month, shoes cost \$1{,}000. Computes ``2 pairs per month''. & 6/24 & Inverted ratio \\
+1293/C3 & 5000 bars/day at \$2, two weeks. Correct code, but ends with an assignment and returns nothing. & 140000/-- & Format non-compliance \\\bottomrule
 \end{tabular}\end{table}
 
-\begin{figure}[t]\centering
-\includegraphics[width=0.92\linewidth]{fig_loss.pdf}
-\caption{LoRA training loss (raw and 10-step moving average).}\label{fig:loss}
-\end{figure}
-
-\section{Analysis}
-\subsection{Why did fine-tuning hurt?}
-\textbf{Shorter reasoning.} The median C4 answer has 84 tokens against 211 for C1. GSM8K reference
-solutions are terse, and C4 adopted that style completely: 55\% of C1 answers use LaTeX-formatted
-step-by-step derivations, against 0\% of C4 answers.
-
-\textbf{The loss concentrates on long problems.} We bucket test items by the number of steps in their
-reference solution (Fig.~\ref{fig:steps}). The C1$-$C4 gap grows almost monotonically with problem length:
-6.7 points for 1--2 steps, 8.6 for 3, 10.1 for 4, 19.4 for 5 and 20.7 for 6 or more. A model that writes
-less reasoning fails where more reasoning is needed.
-
-\textbf{Arithmetic is not the cause.} We re-evaluated every equation of the form
-``\emph{expression} $=$ \emph{number}'' found in the outputs, respecting operator precedence. The error rate
-per equation is similar for C1 (3.8\%), C2 (3.1\%) and C4 (3.5\%). The sampled C4 failures are planning
-errors with correct arithmetic: dropped constraints, wrong quantities combined, or misread units.
-
-\textbf{Interpretation.} Qwen2.5-Instruct was already post-trained extensively on mathematical reasoning,
-and its own derivations are longer and more careful than the human references. Supervised fine-tuning
-on those references therefore imitates a weaker teacher. The low initial loss (about 0.6) and the early plateau
-suggest more steps would not help. The standard remedy is to train on the model's own verified
-solutions instead (rejection-sampling fine-tuning, STaR~\cite{zelikman2022star,yuan2023scaling}).
-
-\begin{figure}[t]\centering
-\includegraphics[width=0.92\linewidth]{fig_steps.pdf}
-\caption{Accuracy by number of steps in the reference solution. Bucket sizes: 326, 371, 297, 175, 150.}\label{fig:steps}
-\end{figure}
-
-\subsection{Why did PAL not help?}
-PAL removes arithmetic errors, but at about 3\% per equation there are few to remove. Its costs are
-larger: 7.4\% of programs gave no answer (85 ended with an assignment instead of the requested
-\texttt{solution()} function; 12 raised errors, none timed out), and only 64.4\% of the executable programs
-were correct, because translating a word problem into code is itself a reasoning step at which a 1.5B model
-fails. As a sensitivity check that is \emph{not} our primary metric, reading the last assigned variable of
-those 85 programs raises PAL to 64.1\%, still 6.8 points below C1.
-
-\subsection{Direct prompting is already implicit CoT}
-With a mean of 217 tokens, the ``direct'' C1 condition is not answer-only: the instruction-tuned model
-reasons step by step without being asked. The explicit CoT instruction adds structure and verification on
-top of this, which explains a moderate rather than dramatic gain.
-
-\subsection{Complementarity}
-Conditions fail on different items: 88.2\% of problems are solved by at least one condition, but only
-38.1\% by all four. CoT and PAL return the same answer on 56.8\% of items, and on those items that answer
-is correct 93.6\% of the time; on the remaining items CoT accuracy falls to 51.4\%. Agreement between
-two cheap prompting strategies is therefore a useful confidence signal for deciding when to trust an answer.
-
-\section{Discussion}
-The cost comparison favours prompting. C2 needs no training and adds only 61 tokens per answer over C1,
-while C4 needed a training run and still lost. C4 is also slower per item despite shorter outputs. A likely
-cause is that its LoRA adapters were not merged into the base weights, adding extra matrix products in
-every layer; merging would remove this overhead. More generally, fine-tuning helps when the supervision
-is better than what the model already does. On a saturated benchmark with a strong instruction-tuned model,
-that is not the case for human references, and the result reverses the common intuition that fine-tuning
-always beats prompting.
-
-\section{Limitations}
-We use one model, one seed and one LoRA configuration, so variance across seeds and the effect of rank,
-learning rate and data are not measured. GSM8K may overlap the model's post-training data; this affects all
-conditions but may reduce the headroom for fine-tuning. Greedy decoding excludes self-consistency, which
-typically improves CoT. The arithmetic checker only parses explicit numeric equations, so its error rates
-describe the checkable subset of each output. Latency is measured per batch and depends on batch composition.
-
 \section{Conclusion}
-No: a single LoRA run on GSM8K reference solutions did not outperform prompting. It lost 11.3 points to
-direct prompting and 15.8 points to zero-shot CoT on the same model, both highly significant. The failure
-traces to the training data, not the method. Fine-tuning taught the model to reason more briefly, which
-hurts most on long problems. For this model and task, zero-shot chain-of-thought is the best of the
-tested options.
+A single LoRA run on GSM8K reference solutions did \emph{not} outperform prompting: it lost 11.3 points to
+direct prompting and 15.8 points to zero-shot CoT, both highly significant. The failure traces to the
+training targets, not to LoRA: fine-tuning taught the model to reason more briefly, which hurts most on long
+problems. For this model and task, zero-shot CoT is the best option tested. \textbf{Limitations:} one model,
+one seed and one LoRA configuration, so seed variance and the effect of rank or learning rate are not
+measured. GSM8K may overlap the model's post-training data. Greedy decoding excludes self-consistency. The
+arithmetic checker only parses explicit numeric equations. Latency depends on batch composition.
 
-\section*{Reproducibility}
-Code, Colab notebook, raw per-item predictions and the analysis script are available at
+\section*{Code and AI Usage}
+Code, notebook, predictions and the analysis script:
 \url{https://github.com/MeteHanYilmaz0/Data_Ai/tree/ccr-36b08569-obh9ku/YZM5109_Assignment1}.
-
-\section*{Use of AI Tools}
-An AI assistant (Claude) was used to design and implement the experiment code, to carry out the
-post-hoc analysis and to draft this report. The author ran all experiments on Google Colab and reviewed
-the code, the results and the text.
+An AI assistant (Claude) was used to design and implement the code, run the post-hoc analysis and draft this
+report. The author ran all experiments on Google Colab and reviewed the code, results and text. Details are in
+the attached AI usage log.
 
 \begin{thebibliography}{10}
 \bibitem{hu2022lora} E.~J. Hu \emph{et al.}, ``LoRA: Low-rank adaptation of large language models,'' in \emph{Proc. ICLR}, 2022.
@@ -212,4 +186,24 @@ the code, the results and the text.
 \bibitem{yuan2023scaling} Z.~Yuan \emph{et al.}, ``Scaling relationship on learning mathematical reasoning with large language models,'' \emph{arXiv:2308.01825}, 2023.
 \bibitem{mcnemar1947} Q.~McNemar, ``Note on the sampling error of the difference between correlated proportions or percentages,'' \emph{Psychometrika}, vol.~12, no.~2, pp.~153--157, 1947.
 \end{thebibliography}
+
+\appendices
+\section{Exact Prompts}\label{app:prompts}
+\footnotesize
+\textbf{System (all conditions):} \texttt{You are a helpful assistant.}
+
+\textbf{C1 direct (also C4 evaluation and C4 training input):}\\
+\texttt{Solve the following math problem.\textbackslash n\textbackslash nQuestion: \{question\}\textbackslash n\textbackslash nEnd your response with "The answer is: <number>".}
+
+\textbf{C2 zero-shot CoT:}\\
+\texttt{Solve the following math problem. Let's think step by step: break the problem into smaller steps,
+write out every intermediate calculation, and check the result before answering.\textbackslash n\textbackslash nQuestion:
+\{question\}\textbackslash n\textbackslash nEnd your response with "The answer is: <number>".}
+
+\textbf{C3 PAL:}\\
+\texttt{Write a Python function named `solution()` that solves the following math problem and returns the
+final numeric answer. Use descriptive variable names and simple arithmetic. Do not use input() or external
+libraries. Reply with a single \`{}\`{}\`{}python code block only.\textbackslash n\textbackslash nQuestion: \{question\}}
+
+\textbf{C4 training target:} \texttt{\{reference solution without <<...>>\}\textbackslash nThe answer is: \{gold\}}
 \end{document}
